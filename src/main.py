@@ -1,6 +1,13 @@
+from dotenv import load_dotenv
 from flask import Flask, Response, abort, request
 import json
 import requests
+import os
+
+load_dotenv()
+
+NAVER_OCR_URL = os.getenv('NAVER_OCR_URL')
+NAVER_OCR_SECRET = os.getenv('NAVER_OCR_SECRET')
 
 app = Flask(__name__)
 
@@ -26,8 +33,8 @@ def newOCRRequest():
         abort(400, Response('type field should be png or jpg'))
         return
 
-    return requests.post('https://{}/infer'.format('a64153a890fe4df0a17b694259820af2.apigw.ntruss.com/custom/v1/3977/d6d7c7eb3cea304108b504ded754807430cfc00899aa8309ebb8c9599b3f83b7'), headers={
-        'X-OCR-SECRET': 'Q05ZVUtBVmVzYkxiUGdyRU5ZVk9TbXVTZnVGTWZ3b0Y='
+    return requests.post('https://{}/infer'.format(NAVER_OCR_URL), headers={
+        'X-OCR-SECRET': NAVER_OCR_SECRET
     }, files={
         'file': request.files['image'].stream
     }, data={
