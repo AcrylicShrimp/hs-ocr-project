@@ -329,3 +329,6 @@ $RECYCLE.BIN/
 
 # Routify temp directory
 .routify/
+
+# Temp
+tmp/

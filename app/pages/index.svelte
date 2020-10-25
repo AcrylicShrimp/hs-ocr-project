@@ -93,7 +93,7 @@
 		id="image-upload"
 		type="file"
 		class="input"
-		accept="image/png,image/jpg"
+		accept="image/png,image/jpeg"
 		on:change="{(event) => (image = event.target.files[0])}"
 	/>
 	{#if image}
@@ -114,9 +114,12 @@
 			<h3>Fields</h3>
 			{#each result.images[0].fields as field}
 				<p>
-					{field.name}: {field.inferText}
+					{field.name}:
+					{field.inferText}
 					{Math.round(field.inferConfidence * 10000) / 100}%
 				</p>
+			{:else}
+				<p>No field</p>
 			{/each}
 		{/if}
 	{/if}
