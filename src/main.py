@@ -50,7 +50,7 @@ def newOCRRequest():
             'images': [{
                 'format': image_type,
                 'name': 'image',
-                'templateIds': ['4567', '4568']
+                'templateIds': ['4567', '4568', '5016']
             }]
         })
     }).text
