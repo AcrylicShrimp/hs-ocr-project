@@ -1,4 +1,5 @@
-import api
+import libs.api as api
+import libs.preprocess as preprocess
 import base64
 from datetime import datetime
 from dotenv import load_dotenv
@@ -8,7 +9,6 @@ import itertools
 import json
 import os
 from pathlib import Path
-import preprocess
 
 load_dotenv()
 
