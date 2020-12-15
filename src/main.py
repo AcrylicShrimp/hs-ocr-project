@@ -1,5 +1,6 @@
-import libs.api as api
-import libs.preprocess as preprocess
+import api
+import preprocess
+
 import base64
 from datetime import datetime
 from dotenv import load_dotenv
