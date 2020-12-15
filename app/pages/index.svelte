@@ -32,6 +32,33 @@
 		margin: 16px auto;
 		box-shadow: 0px 0px 3px 0px rgba(0, 0, 0, 0.16);
 	}
+
+	.preview-container {
+		display: flex;
+		flex-direction: row;
+		align-items: flex-start;
+		justify-content: center;
+	}
+
+	.preview-inner-container {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: flex-start;
+	}
+
+	.preview-text {
+		width: 250px;
+	}
+
+	.api-button-container {
+		margin: 19px 0;
+	}
+
+	.final-text {
+		background-color: #bcbcbc;
+		white-space: pre-line;
+	}
 </style>
 
 <script>
@@ -41,6 +68,10 @@
 	let src;
 	let uploading = false;
 	let result;
+	let resultGrayImage;
+	let resultBinaryImage;
+	let resultDrawnImage;
+	let resultProcessedImage;
 
 	$: {
 		if (image) {
@@ -60,15 +91,25 @@
 			const formData = new FormData();
 			formData.append('image', image);
 			formData.append(
+				'api',
+				document.getElementById('api-naver').checked
+					? 'naver'
+					: 'google'
+			);
+			formData.append(
 				'type',
 				image.name.endsWith('.png') ? 'png' : 'jpg'
 			);
 
 			const response = await axios.post('/api/ocr-requests', formData);
+			result = JSON.parse(response.data.result);
 
-			console.log(response.data);
+			console.log(result);
 
-			result = response.data;
+			resultGrayImage = response.data.grayImage;
+			resultBinaryImage = response.data.binaryImage;
+			resultDrawnImage = response.data.drawnImage;
+			resultProcessedImage = response.data.processedImage;
 		} catch (err) {
 			if (err.response)
 				alert(
@@ -99,28 +140,69 @@
 	{#if image}
 		<img class="preview" alt="{image.name}" src="{src}" width="300" />
 	{/if}
+	<div class="api-button-container">
+		<input id="api-naver" name="api" type="radio" value="naver" checked />
+		<label for="api-naver">Use Naver OCR</label>
+	</div>
+	<div class="api-button-container">
+		<input id="api-google" name="api" type="radio" value="google" />
+		<label for="api-google">Use Google OCR</label>
+	</div>
 	<button on:click="{handleClick}">Run OCR</button>
 	{#if uploading}
 		<h2>Running OCR...</h2>
 	{:else if result}
-		{#if result.message}
-			<h2>Result</h2>
-			<p>{result.code}</p>
-			<p>{result.message}</p>
+		<h2>Result</h2>
+		<h3>Images</h3>
+		<div class="preview-container">
+			<div class="preview-inner-container">
+				<h4>Gray</h4>
+				<img
+					class="preview"
+					src="{resultGrayImage}"
+					alt="preview"
+					width="250"
+				/>
+			</div>
+			<div class="preview-inner-container">
+				<h4>Binary</h4>
+				{#if resultBinaryImage}
+					<img
+						class="preview"
+						src="{resultBinaryImage}"
+						alt="preview"
+						width="250"
+					/>
+				{:else}<span class="preview-text">N/A</span>{/if}
+			</div>
+			<div class="preview-inner-container">
+				<h4>Drawn</h4>
+				<img
+					class="preview"
+					src="{resultDrawnImage}"
+					alt="preview"
+					width="250"
+				/>
+			</div>
+		</div>
+		<div class="preview-inner-container">
+			<h4>Processed</h4>
+			<img
+				class="preview"
+				src="{resultProcessedImage}"
+				alt="preview"
+				width="500"
+			/>
+		</div>
+		<h3>Texts</h3>
+		{#each result.texts as text}
+			<p>
+				<span class="final-text">{text.text}</span>
+				(confidence:
+				{Math.round(text.confidence * 10000) / 100}%)
+			</p>
 		{:else}
-			<h2>Result</h2>
-			<p>{result.images[0].inferResult}</p>
-			<p>{result.images[0].message}</p>
-			<h3>Fields</h3>
-			{#each result.images[0].fields as field}
-				<p>
-					{field.name}:
-					{field.inferText}
-					{Math.round(field.inferConfidence * 10000) / 100}%
-				</p>
-			{:else}
-				<p>No field</p>
-			{/each}
-		{/if}
+			<p>No field</p>
+		{/each}
 	{/if}
 </div>
