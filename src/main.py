@@ -50,8 +50,7 @@ def newOCRRequest():
     image, gray, binary, drawn, processed = preprocess.preprocess(
         request.files['image'].stream)
 
-    # result = api.handle_api(api_type, image_type, processed)
-    result = api.handle_api(api_type, image_type, image)
+    result = api.handle_api(api_type, image_type, processed)
 
     timestamp = datetime.now().strftime('%Y-%m-%d %H-%M-%S.%f')
     path = 'tmp/{}'.format(timestamp)
