@@ -23,6 +23,10 @@
 		justify-content: flex-start;
 	}
 
+	.preview-text {
+		width: 250px;
+	}
+
 	.final-text {
 		background-color: #bcbcbc;
 		white-space: pre-line;
@@ -78,12 +82,14 @@
 			<div class="preview-container">
 				<div class="preview-inner-container">
 					<span>Gray</span>
-					<img
-						class="preview"
-						src="{history.grayImage}"
-						alt="preview"
-						width="250"
-					/>
+					{#if history.grayImage}
+						<img
+							class="preview"
+							src="{history.grayImage}"
+							alt="preview"
+							width="250"
+						/>
+					{:else}<span class="preview-text">N/A</span>{/if}
 				</div>
 				<div class="preview-inner-container">
 					<span>Binary</span>
@@ -98,22 +104,26 @@
 				</div>
 				<div class="preview-inner-container">
 					<span>Drawn</span>
-					<img
-						class="preview"
-						src="{history.drawnImage}"
-						alt="preview"
-						width="250"
-					/>
+					{#if history.drawnImage}
+						<img
+							class="preview"
+							src="{history.drawnImage}"
+							alt="preview"
+							width="250"
+						/>
+					{:else}<span class="preview-text">N/A</span>{/if}
 				</div>
 			</div>
 			<div class="preview-inner-container">
 				<span>Processed</span>
-				<img
-					class="preview"
-					src="{history.processedImage}"
-					alt="preview"
-					width="500"
-				/>
+				{#if history.processedImage}
+					<img
+						class="preview"
+						src="{history.processedImage}"
+						alt="preview"
+						width="500"
+					/>
+				{:else}<span class="preview-text">N/A</span>{/if}
 			</div>
 			<h5>Texts</h5>
 			{#each history.result.texts as text}

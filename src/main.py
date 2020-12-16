@@ -6,6 +6,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from flask import Flask, Response, abort, request
 from glob import iglob
+import io
 import itertools
 import json
 import os
@@ -43,14 +44,31 @@ def newOCRRequest():
 
     image_type = request.form.get('type')
 
-    if image_type != 'png' and image_type != 'jpg':
+    if image_type not in ['png', 'jpg']:
         abort(400, Response('type field should be png or jpg'))
         return
 
-    image, gray, binary, drawn, processed = preprocess.preprocess(
-        request.files['image'].stream)
+    if 'preprocess' not in request.form:
+        abort(400, Response('preprocess field must be exist'))
+        return
 
-    result = api.handle_api(api_type, image_type, processed)
+    preprocess_flag = request.form.get('preprocess')
+
+    if preprocess_flag not in ['yes', 'no']:
+        abort(400, Response('preprocess field should be yes or no'))
+        return
+
+    if preprocess_flag == 'yes':
+        image, gray, binary, drawn, processed = preprocess.preprocess(
+            request.files['image'].stream)
+        result = api.handle_api(api_type, image_type, processed)
+    else:
+        image = io.BytesIO(request.files['image'].stream.read())
+        gray = None
+        binary = None
+        drawn = None
+        processed = None
+        result = api.handle_api(api_type, image_type, image)
 
     timestamp = datetime.now().strftime('%Y-%m-%d %H-%M-%S.%f')
     path = 'tmp/{}'.format(timestamp)
@@ -58,24 +76,27 @@ def newOCRRequest():
 
     with open(os.path.join(path, 'image.jpg'), 'wb') as file:
         file.write(image.getbuffer())
-    with open(os.path.join(path, 'gray.jpg'), 'wb') as file:
-        file.write(gray.getbuffer())
+    if gray is not None:
+        with open(os.path.join(path, 'gray.jpg'), 'wb') as file:
+            file.write(gray.getbuffer())
     if binary is not None:
         with open(os.path.join(path, 'binary.jpg'), 'wb') as file:
             file.write(binary.getbuffer())
-    with open(os.path.join(path, 'drawn.jpg'), 'wb') as file:
-        file.write(drawn.getbuffer())
-    with open(os.path.join(path, 'processed.jpg'), 'wb') as file:
-        file.write(processed.getbuffer())
+    if drawn is not None:
+        with open(os.path.join(path, 'drawn.jpg'), 'wb') as file:
+            file.write(drawn.getbuffer())
+    if processed is not None:
+        with open(os.path.join(path, 'processed.jpg'), 'wb') as file:
+            file.write(processed.getbuffer())
     with open(os.path.join(path, 'result.txt'), 'w') as file:
         file.write(result)
 
     return {
         'result': result,
-        'grayImage': 'data:image/jpeg;charset=utf-8;base64, {}'.format(base64.b64encode(gray.getvalue()).decode('utf-8')),
+        'grayImage': None if gray is None else 'data:image/jpeg;charset=utf-8;base64, {}'.format(base64.b64encode(gray.getvalue()).decode('utf-8')),
         'binaryImage': None if binary is None else 'data:image/jpeg;charset=utf-8;base64, {}'.format(base64.b64encode(binary.getvalue()).decode('utf-8')),
-        'drawnImage': 'data:image/jpeg;charset=utf-8;base64, {}'.format(base64.b64encode(drawn.getvalue()).decode('utf-8')),
-        'processedImage': 'data:image/jpeg;charset=utf-8;base64, {}'.format(base64.b64encode(processed.getvalue()).decode('utf-8')),
+        'drawnImage': None if drawn is None else 'data:image/jpeg;charset=utf-8;base64, {}'.format(base64.b64encode(drawn.getvalue()).decode('utf-8')),
+        'processedImage': None if processed is None else 'data:image/jpeg;charset=utf-8;base64, {}'.format(base64.b64encode(processed.getvalue()).decode('utf-8')),
     }
 
 
@@ -103,8 +124,11 @@ def getOCRRequestHistory():
         with open(os.path.join(directory, 'image.jpg'), 'rb') as image:
             image_binary = base64.b64encode(image.read()).decode('utf-8')
 
-        with open(os.path.join(directory, 'gray.jpg'), 'rb') as gray:
-            gray_binary = base64.b64encode(gray.read()).decode('utf-8')
+        try:
+            with open(os.path.join(directory, 'gray.jpg'), 'rb') as gray:
+                gray_binary = base64.b64encode(gray.read()).decode('utf-8')
+        except FileNotFoundError:
+            gray_binary = None
 
         try:
             with open(os.path.join(directory, 'binary.jpg'), 'rb') as binary:
@@ -112,12 +136,18 @@ def getOCRRequestHistory():
         except FileNotFoundError:
             binary_binary = None
 
-        with open(os.path.join(directory, 'drawn.jpg'), 'rb') as drawn:
-            drawn_binary = base64.b64encode(drawn.read()).decode('utf-8')
+        try:
+            with open(os.path.join(directory, 'drawn.jpg'), 'rb') as drawn:
+                drawn_binary = base64.b64encode(drawn.read()).decode('utf-8')
+        except FileNotFoundError:
+            drawn_binary = None
 
-        with open(os.path.join(directory, 'processed.jpg'), 'rb') as processed:
-            processed_binary = base64.b64encode(
-                processed.read()).decode('utf-8')
+        try:
+            with open(os.path.join(directory, 'processed.jpg'), 'rb') as processed:
+                processed_binary = base64.b64encode(
+                    processed.read()).decode('utf-8')
+        except FileNotFoundError:
+            processed_binary = None
 
         with open(os.path.join(directory, 'result.txt'), 'r') as result:
             result_text = json.loads(result.read())
@@ -125,10 +155,10 @@ def getOCRRequestHistory():
         histories.append({
             'timestamp': timestamp.isoformat(),
             'image': 'data:image/jpeg;charset=utf-8;base64, {}'.format(image_binary),
-            'grayImage': 'data:image/jpeg;charset=utf-8;base64, {}'.format(gray_binary),
+            'grayImage': None if gray_binary is None else 'data:image/jpeg;charset=utf-8;base64, {}'.format(gray_binary),
             'binaryImage': None if binary_binary is None else 'data:image/jpeg;charset=utf-8;base64, {}'.format(binary_binary),
-            'drawnImage': 'data:image/jpeg;charset=utf-8;base64, {}'.format(drawn_binary),
-            'processedImage': 'data:image/jpeg;charset=utf-8;base64, {}'.format(processed_binary),
+            'drawnImage': None if drawn_binary is None else 'data:image/jpeg;charset=utf-8;base64, {}'.format(drawn_binary),
+            'processedImage': None if processed_binary is None else 'data:image/jpeg;charset=utf-8;base64, {}'.format(processed_binary),
             'result': result_text
         })
 

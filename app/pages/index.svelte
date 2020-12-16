@@ -51,7 +51,7 @@
 		width: 250px;
 	}
 
-	.api-button-container {
+	.button-container {
 		margin: 19px 0;
 	}
 
@@ -91,14 +91,18 @@
 			const formData = new FormData();
 			formData.append('image', image);
 			formData.append(
+				'type',
+				image.name.endsWith('.png') ? 'png' : 'jpg'
+			);
+			formData.append(
 				'api',
 				document.getElementById('api-naver').checked
 					? 'naver'
 					: 'google'
 			);
 			formData.append(
-				'type',
-				image.name.endsWith('.png') ? 'png' : 'jpg'
+				'preprocess',
+				document.getElementById('preprocess').checked ? 'yes' : 'no'
 			);
 
 			const response = await axios.post('/api/ocr-requests', formData);
@@ -140,13 +144,17 @@
 	{#if image}
 		<img class="preview" alt="{image.name}" src="{src}" width="300" />
 	{/if}
-	<div class="api-button-container">
+	<div class="button-container">
 		<input id="api-naver" name="api" type="radio" value="naver" checked />
 		<label for="api-naver">Use Naver OCR</label>
 	</div>
-	<div class="api-button-container">
+	<div class="button-container">
 		<input id="api-google" name="api" type="radio" value="google" />
 		<label for="api-google">Use Google OCR</label>
+	</div>
+	<div class="button-container">
+		<input id="preprocess" type="checkbox" checked />
+		<label for="preprocess">Enable preprocess</label>
 	</div>
 	<button on:click="{handleClick}">Run OCR</button>
 	{#if uploading}
@@ -157,12 +165,14 @@
 		<div class="preview-container">
 			<div class="preview-inner-container">
 				<h4>Gray</h4>
-				<img
-					class="preview"
-					src="{resultGrayImage}"
-					alt="preview"
-					width="250"
-				/>
+				{#if resultGrayImage}
+					<img
+						class="preview"
+						src="{resultGrayImage}"
+						alt="preview"
+						width="250"
+					/>
+				{:else}<span class="preview-text">N/A</span>{/if}
 			</div>
 			<div class="preview-inner-container">
 				<h4>Binary</h4>
@@ -177,22 +187,26 @@
 			</div>
 			<div class="preview-inner-container">
 				<h4>Drawn</h4>
-				<img
-					class="preview"
-					src="{resultDrawnImage}"
-					alt="preview"
-					width="250"
-				/>
+				{#if resultDrawnImage}
+					<img
+						class="preview"
+						src="{resultDrawnImage}"
+						alt="preview"
+						width="250"
+					/>
+				{:else}<span class="preview-text">N/A</span>{/if}
 			</div>
 		</div>
 		<div class="preview-inner-container">
 			<h4>Processed</h4>
-			<img
-				class="preview"
-				src="{resultProcessedImage}"
-				alt="preview"
-				width="500"
-			/>
+			{#if resultProcessedImage}
+				<img
+					class="preview"
+					src="{resultProcessedImage}"
+					alt="preview"
+					width="500"
+				/>
+			{:else}<span class="preview-text">N/A</span>{/if}
 		</div>
 		<h3>Texts</h3>
 		{#each result.texts as text}
